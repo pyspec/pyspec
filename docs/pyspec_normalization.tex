@@ -1,0 +1,137 @@
+
+\documentclass[11pt]{article}
+
+%% WRY has commented out some unused packages %%
+%% If needed, activate these by uncommenting
+\usepackage{geometry}                % See geometry.pdf to learn the layout options. There are lots.
+%\geometry{letterpaper}                   % ... or a4paper or a5paper or ... 
+\geometry{a4paper,left=2.5cm,right=2.5cm,top=2.5cm,bottom=2.5cm}
+%\geometry{landscape}                % Activate for rotated page geometry
+%\usepackage[parfill]{parskip}    % Activate to begin paragraphs with an empty line rather than an indent
+
+%for figures
+%\usepackage{graphicx}
+
+\usepackage{color}
+\definecolor{mygreen}{RGB}{28,172,0} % color values Red, Green, Blue
+\definecolor{mylilas}{RGB}{170,55,241}
+%% for graphics this one is also OK:
+\usepackage{epsfig}
+
+%% AMS mathsymbols are enabled with
+\usepackage{amssymb,amsmath}
+
+%% more options in enumerate
+\usepackage{enumerate}
+\usepackage{enumitem}
+
+%% insert code
+\usepackage{listings}
+
+\usepackage[utf8]{inputenc}
+
+\usepackage{hyperref}
+
+%% colors
+\usepackage{graphicx,xcolor,lipsum}
+
+
+\usepackage{mathtools}
+
+\usepackage{graphicx}
+\newcommand*{\matminus}{%
+  \leavevmode
+  \hphantom{0}%
+  \llap{%
+    \settowidth{\dimen0 }{$0$}%
+    \resizebox{1.1\dimen0 }{\height}{$-$}%
+  }%
+}
+
+\title{Notes on spectral estimation, etc.}
+\author{
+CR \thanks{Scripps Institution of Oceanography,
+University of California at San Diego, La Jolla, CA
+92093--0230, USA. email:crocha@ucsd.edu. }
+}
+\date{\today}
+
+\begin{document}
+
+\include{mysymbols}
+
+\maketitle
+
+\section{Introduction}
+
+The Fast Fourier transform (FFT) algorithm implemented in Python defines the one-dimensional discrete Fourier transform (DFT) as
+
+\beq
+    \label{eq:dft_dfn}
+    \hat{A}[m] =  \sum_{n=0}^{\nmax-1}
+    A[n]\exp \left(-2\pi i {n \,m\over \nmax}\right)\com
+   \qquad m = 0, \ldots, \nmax-1\com
+\eeq
+where $A_n$ is a list of size $N$ that contains the data in physical domain with uniform spacing
+\beq
+\label{eq:x_spacing}
+dx = {L \over \nmax}\com\qqand x_n = n \dd x\com
+\eeq
+where $L$ the length of the domain. Notice that because of the periodicity of the complex exponentials, $\hat{A}_k$ is also periodic with period $\nmax$. That is $\hat{A}[\nmax] = \hat{A}[0]$, $\hat{A}[\nmax+1] = \hat{A}[1]$, etc. If $A_n$ is real-valued, then $\hat{A}_k$ is Hermitian-symmetric about $\nmax/2$. That is, $\hat{A}[1] = \hat{A}^\star[\nmax-1]$, $\hat{A}[2] = \hat{A}^\star[\nmax-2]$, etc, where the superscript $\star$ denote complex conjugation. We can therefore shift the summation in \eqref{eq:dft_dfn} by any integer. A popular choice is to sum from $-\nmax/2$ through $\nmax/2-1$. The zeroth coefficient $\hat{A}[0]$ is a special case. Before we discuss it, let's introduce a slightly better notation. With the spectral resolution $dk$, we can define the wavenumber in \eqref{eq:dft_dfn}
+\beq
+\label{eq:sepc_resol}
+k_m \defn m \dd k\com\qqand \dd k =\frac{1}{L} = \frac{1}{N \dd x}\per
+\eeq
+Hence we can rewrite  the DFT in \eqref{eq:dft_dfn} as
+\beq
+\label{eq:dft_dfn_2}
+    \hat{A}[m] =  \sum_{n=0}^{\nmax-1}
+    A[n]\ee^{-2\pi i k_m\, x}\com
+   \qquad m = 0, \ldots, N-1\per
+\eeq
+With $m=0$ we have the zeroth Fourier coefficient
+\beq
+\label{eq:zeroth_fc}
+\hat{A}[0] = \sum_{n=0}^{N-1} A[n]\per
+\eeq
+It is convenient to normalize the Fourier coefficients in \eqref{eq:dft_dfn} by  $\nmax$  so that zeroth Fourier coefficient represents the arithmetic  average of the elements of $A$. This normalization also makes the DFT defined in \eqref{eq:dft_dfn}  analogous to the continuous Fourier transform (FT) if we recognize the summation in \eqref{eq:dft_dfn}  times $dx$ as Riemann integral. Some people like \textit{obtain} DFT as a discretization of the FT. This is sometime advantageous, particularly when we are comparing data against theoretical predictions. I personally do not like that approach. I prefer to \textit{define} the DFT as \eqref{eq:dft_dfn} and show that it has analog properties to the FT; all proofs are self-consistent using discrete mathematics.
+
+This is only a matter of normalization. Mathematically, what really matters is to define the inverse transform accordingly. The inverse DFT (iDFT) consistent with \eqref{eq:dft_dfn} is
+\beq
+    \label{eq:idft_dfn}
+    A[n] =  \frac{1}{\nmax}\sum_{m=0}^{\nmax-1}
+    \hat{A}[m]\exp \left(2\pi i {m n\over \nmax}\right)\com
+   \qquad n = 0, \ldots, \nmax-1\per
+\eeq
+This is the iDFT implemented in Python. If we normalize \eqref{eq:dft_dfn} by $\nmax$, then we must multiply \eqref{eq:idft_dfn} by $\nmax$. Notice that $\hat{A}$  has the same units of $A$.
+
+\section{The spectrum}
+The Fourier coefficients $\hat{A}$ are complex-valued. Typically we are more interested in the relative magnitude of those coefficients. Hence we define the spectrum as the square of the absolute value of $\hat{A}$
+\beq
+\label{eq:spec_defn}
+\hat{S}[m] \defn |A[m]|^2 = \hat{A}[m]\hat{A}^\star[m]\per
+\eeq
+It can be shown that $S[m]$ are the Fourier coefficients of the auto-correlation function of $A$.
+
+\section{Parseval's theorem}
+This important theorem states that
+\beq
+\label{eq:parseval}
+\sum_{n=0}^{\nmax-1} |A[n]|^2 = \frac{1}{\nmax}\sum_{m=0}^{\nmax-1} |\hat{A}[n]|^2 = \frac{1}{\nmax}\sum_{m=0}^{\nmax-1} \hat{S}[n] \per
+\eeq
+This theorem is sometime quoted as ``the variance in physical space is equal to the variance in Fourier space''. For this statement to be true, we must normalize the above expression by $\nmax$
+\beq
+\frac{1}{\nmax}\sum_{n=0}^{\nmax-1} |A[n]|^2 = \frac{1}{\nmax^2}\sum_{m=0}^{\nmax-1} |\hat{A}[n]|^2 = \frac{1}{\nmax^2}\sum_{m=0}^{\nmax-1} \hat{S}[n] \per
+\eeq
+Notice that we would not have this normalization if we defined the Fourier coefficients as $\eqref{eq:dft_defn}$ normalized by $\nmax$. To be more precise, we would note include the average (zeroth coefficient). In practice, when dealing with data, we typically remove the average before applying the DFT, so that $\hat{A}[0]$ is zero within machine precision. It is sometimes useful to think of the area under spectrum $\hat{S}$ as the total variance. An estimate to this area is
+\beq
+\text{Area} \approx \frac{1}{\nmax^2}\sum_{m=0}^{\nmax-1} \hat{S}[n] \dd k\per
+\eeq
+To ensure this property while  satisfying  Parseval's relation \eqref{eq:parseval} we normalize $\hat{S}$ by $\dd k$. Thus the spectrum that we typically plot in a log$\times$log space is the square of the absolute value of the Fourier coefficients divided by $\dd k\,\nmax^2$, and it has units of $A^2/k$. Notice that if $dx = 1$, then $dk = 1/\nmax$ and we just need to normalize by $\nmax$. Another nice property of the spectrum normalized by $\dd k$ is that it is independent of the spectral resolution $\dd k$, and therefore it is useful for comparing spectra calculated from data with different sampling characteristics. Furthermore, because typically we deal with real signals, $\hat{S}$ is symmetric since $\hat{A}$ is Hermitian-symmetric as discussed above. 
+
+\section{A note on averaging many estimates}
+A spectrum computed from a single realization is useless because the error in this estimate is of the same order as the spectrum (see Bendat and Piersol). Thus we average many realizations to obtain a meaningful estimate. I think it is best to normalize the spectrum by $\nmax^2$ only after averaging. If $\nmax$ is large and $\hat{A}$ is small, we can loose accuracy by normalizing single estimates.
+
+\end{document}
+
+
