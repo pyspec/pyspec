@@ -1,4 +1,5 @@
 import numpy as np
+from numpy import pi
 try:
     import mkl
     np.use_fastnumpy = True
@@ -28,7 +29,7 @@ class Spectrum(object):
         self.calc_spectrum()
 
         # calculate total var
-        self.calc_var()
+        self.calc_var() 
 
     def calc_freq(self):
         """ calculate array of spectral variable (frequency or 
@@ -59,7 +60,84 @@ class Spectrum(object):
         """ Compute total variance from spectrum """
         self.var = self.df*self.spec[1:].sum()  # do not consider zeroth frequency
 
+class TWODimensional_spec(object):
+    """ A class that represent a two dimensional spectrum 
+            for real signals """
 
+    def __init__(self,phi,d1,d2):
 
+        self.phi = phi  # two dimensional real field
+        self.d1 = d1
+        self.d2 = d2
+        self.n1,self.n2 = phi.shape
+        self.L1 = d1*self.n1
+        self.L2 = d2*self.n2
+
+    
+        # calculate frequencies
+        self.calc_freq()
+
+        # calculate spectrum
+        self.calc_spectrum()
+
+        # calculate total var
+        self.calc_var()
+           
+      # calculate isotropic spectrum
+        self.calc_ispec()
+
+    def calc_freq(self):
+        """ calculate array of spectral variable (frequency or 
+                wavenumber) in cycles per unit of L """
+
+        # wavenumber one (equals to dk1 and dk2)
+        self.dk1 = 1./self.L1
+        self.dk2 = 1./self.L2
+
+        # wavenumber grids
+        k2 = self.dk2*np.append( np.arange(0.,self.n2/2), \
+            np.arange(-self.n2/2,0.) )
+        k1 = self.dk1*np.arange(0.,self.n1/2+1)
+
+        self.kk1,self.kk2 = np.meshgrid(k1,k2)
+    
+        self.kk1 = np.fft.fftshift(self.kk1,axes=0)
+        self.kk2 = np.fft.fftshift(self.kk2,axes=0)
+        self.kappa2 = self.kk1**2 + self.kk2**2
+        self.kappa = np.sqrt(self.kappa2)
+
+    def calc_spectrum(self):
+        """ calculates the spectrum """
+        self.phih = np.fft.rfft2(self.phi)
+        self.spec = 2.*(self.phih*self.phih.conj()).real/ (self.dk1*self.dk2)\
+                / (self.n1*self.n2)**2
+        self.spec =  np.fft.fftshift(self.spec,axes=0)
+
+    def calc_var(self):
+        """ compute variance of p from Fourier coefficients ph """
+        self.var_dens = np.fft.fftshift(self.spec.copy(),axes=0)
+        # only half of coefs [0] and [nx/2+1] due to symmetry in real fft2
+        self.var_dens[:,0],self.var_dens[:,-1] = self.var_dens[:,0]/2.,\
+                self.var_dens[:,-1]/2.
+        self.var = self.var_dens.sum()*self.dk1*self.dk2
+
+    def calc_ispec(self):
+        """ calculates isotropic spectrum """
+        if self.kk1.max()>self.kk2.max():
+            kmax = self.kk2.max()
+        else:
+            kmax = self.kk1.max()
+
+        # create radial wavenumber
+        self.dkr = np.sqrt(self.dk1**2 + self.dk2**2)
+        self.kr =  np.arange(self.dkr/2.,kmax+self.dkr,self.dkr)
+        self.ispec = np.zeros(self.kr.size)
+
+        for i in range(self.kr.size):
+            fkr =  (self.kappa>=self.kr[i]-self.dkr/2) \
+                    & (self.kappa<=self.kr[i]+self.dkr/2)
+            print fkr.sum()
+            self.ispec[i] = self.spec[fkr].sum() * self.kr[i] * pi / fkr.sum()
+ 
 
 
