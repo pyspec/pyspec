@@ -137,7 +137,8 @@ class TWODimensional_spec(object):
             fkr =  (self.kappa>=self.kr[i]-self.dkr/2) \
                     & (self.kappa<=self.kr[i]+self.dkr/2)
             print fkr.sum()
-            self.ispec[i] = self.spec[fkr].sum() * self.kr[i] * pi / fkr.sum()
+            dth = pi / (fkr.sum()-1)
+            self.ispec[i] = self.spec[fkr].sum() * self.kr[i] * dth
  
 
 
