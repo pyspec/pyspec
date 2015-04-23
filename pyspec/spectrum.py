@@ -8,7 +8,7 @@ except ImportError:
     pass
 
 class Spectrum(object):
-    """ A class that represents the a single realization of 
+    """ A class that represents a single realization of 
             the one-dimensional spectrum  of a given field phi """
     
     def __init__(self,phi,dt):
@@ -155,35 +155,56 @@ class TWODimensional_spec(object):
             dth = pi / (fkr.sum()-1)
             self.ispec[i] = self.spec[fkr].sum() * self.kr[i] * dth
 
-
 def spec_error(E,sn,ci=.95):
 
-    """ Computes confidence interval for spectral 
+    """ Computes confidence interval for one-dimensional spectral 
         estimate E.
-           sn is the number of spectral realizations (dof/2)
-           ci = .95 for 95 % confidence interval 
-        returns lower (El) and upper (Eu) bounds on E
-        as well as pdf and cdf used to estimate errors """
 
-    ## params
-    dbin = .001
-    yN = np.arange(0,5.+dbin,dbin)
+        Parameters
+        ===========
+        - sn is the number of spectral realizations;
+                it can be either an scalar or an array of size(E)
+        - ci = .95 for 95 % confidence interval
 
-    if dof < 150:
+        Output
+        ==========
+        lower (El) and upper (Eu) bounds on E       """
 
-        cdf = gammainc(sn,sn*yN)  # cdf of chi^2 dist. with 2*sn DOF
+    dbin = .005
+    yN = np.arange(0,2.+dbin,dbin)
 
-        fl = np.abs(cdf_yN - ci).argmin()
-        fu = np.abs(cdf_yN - 1. + ci).argmin()
+    El, Eu = np.empty_like(E), np.empty_like(E)
 
-        El = E/yN[fl]
-        Eu = E/yN[fu]
+    try:
+        n = sn.size
+    except AttributeError:
+        n = 0
 
-    # if sn larger than 150, assume it is normally-distributed (e.g., Bendat and Piersol) 
+    if n:
+        
+        assert n == E.size, " *** sn has different size than E "
+
+        for i in range(n):
+            yNl,yNu = yNlu(sn[i],yN=yN,ci=ci)
+            El[i] = E[i]/yNl
+            Eu[i] = E[i]/yNu
+            
     else:
-        std_E = (1/np.sqrt(sn))
-        El = E/(1 + 2*std_E)
-        Eu = E/(1 - 2*std_E)
+        yNl,yNu = yNlu(sn,yN=yN,ci=ci)
+        El = E/yNl
+        Eu = E/yNu
+
 
     return El, Eu 
+
+def yNlu(sn,yN,ci):
+    """ compute yN[l] yN[u], that is, the lower and 
+                upper limit of yN """
+   
+    # cdf of chi^2 dist. with 2*sn DOF
+    cdf = gammainc(sn,sn*yN)  
+    fl = np.abs(cdf - ci).argmin()
+    fu = np.abs(cdf - 1. + ci).argmin()
+
+    return yN[fl],yN[fu]
 
