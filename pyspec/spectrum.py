@@ -1,5 +1,6 @@
 import numpy as np
 from numpy import pi
+from scipy.special import gammainc
 try:
     import mkl
     np.use_fastnumpy = True
@@ -73,7 +74,15 @@ class TWODimensional_spec(object):
         self.L1 = d1*self.n1
         self.L2 = d2*self.n2
 
-    
+        # test eveness
+        if (self.n1 % 2):
+            self.n1even = False
+        else: self.n1even = True
+
+        if (self.n2 % 2):
+            self.n2even = False
+        else: self.n2even = True
+
         # calculate frequencies
         self.calc_freq()
 
@@ -117,9 +126,16 @@ class TWODimensional_spec(object):
         """ compute variance of p from Fourier coefficients ph """
         self.var_dens = np.fft.fftshift(self.spec.copy(),axes=0)
         # only half of coefs [0] and [nx/2+1] due to symmetry in real fft2
-        self.var_dens[:,0],self.var_dens[:,-1] = self.var_dens[:,0]/2.,\
-                self.var_dens[:,-1]/2.
-        self.var = self.var_dens.sum()*self.dk1*self.dk2
+
+        if self.n1even:
+            self.var_dens[:,0],self.var_dens[:,-1] = self.var_dens[:,0]/2.,\
+                    self.var_dens[:,-1]/2.
+            self.var = self.var_dens.sum()*self.dk1*self.dk2
+        else:
+            self.var_dens[:,0],self.var_dens[:,-1] = self.var_dens[:,0]/2.,\
+                    self.var_dens[:,-1]
+            self.var = self.var_dens.sum()*self.dk1*self.dk2
+
 
     def calc_ispec(self):
         """ calculates isotropic spectrum """
@@ -136,9 +152,38 @@ class TWODimensional_spec(object):
         for i in range(self.kr.size):
             fkr =  (self.kappa>=self.kr[i]-self.dkr/2) \
                     & (self.kappa<=self.kr[i]+self.dkr/2)
-            print fkr.sum()
             dth = pi / (fkr.sum()-1)
             self.ispec[i] = self.spec[fkr].sum() * self.kr[i] * dth
- 
 
+
+def spec_error(E,sn,ci=.95):
+
+    """ Computes confidence interval for spectral 
+        estimate E.
+           sn is the number of spectral realizations (dof/2)
+           ci = .95 for 95 % confidence interval 
+        returns lower (El) and upper (Eu) bounds on E
+        as well as pdf and cdf used to estimate errors """
+
+    ## params
+    dbin = .001
+    yN = np.arange(0,5.+dbin,dbin)
+
+    if dof < 150:
+
+        cdf = gammainc(sn,sn*yN)  # cdf of chi^2 dist. with 2*sn DOF
+
+        fl = np.abs(cdf_yN - ci).argmin()
+        fu = np.abs(cdf_yN - 1. + ci).argmin()
+
+        El = E/yN[fl]
+        Eu = E/yN[fu]
+
+    # if sn larger than 150, assume it is normally-distributed (e.g., Bendat and Piersol) 
+    else:
+        std_E = (1/np.sqrt(sn))
+        El = E/(1 + 2*std_E)
+        Eu = E/(1 - 2*std_E)
+
+    return El, Eu 
 
