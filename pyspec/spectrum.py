@@ -194,17 +194,56 @@ def spec_error(E,sn,ci=.95):
         El = E/yNl
         Eu = E/yNu
 
-
     return El, Eu 
+
 
 def yNlu(sn,yN,ci):
     """ compute yN[l] yN[u], that is, the lower and 
                 upper limit of yN """
    
     # cdf of chi^2 dist. with 2*sn DOF
-    cdf = gammainc(sn,sn*yN)  
+    cdf = gammainc(sn,sn*yN) 
+
+    # indices that delimit the wedge of the conf. interval
     fl = np.abs(cdf - ci).argmin()
     fu = np.abs(cdf - 1. + ci).argmin()
 
     return yN[fl],yN[fu]
+
+
+def avg_per_decade(k,E,nbins = 10):
+    """ Averages the spectra with nbins per decade
+
+        Parameters
+        ===========
+        - E is the spectrum
+        - k is the original wavenumber array
+        - nbins is the number of bins per decade
+
+        Output
+        ==========
+        - ki: the wavenumber for the averaged spectrum
+        - Ei: the averaged spectrum """
+
+    dk = 1./nbins
+    logk = np.log10(k)
+
+    logki = np.arange(np.floor(logk.min()),np.ceil(logk.max())+dk,dk)
+    Ei = np.zeros_like(logki)
+
+    for i in range(logki.size):
+
+        f = (logk>logki[i]-dk/2) & (logk<logki[i]+dk/2)
+
+        if f.sum():
+            Ei[i] = E[f].mean()
+        else:
+            Ei[i] = 0.
+
+    ki = 10**logki
+    fnnan = np.nonzero(Ei)
+    Ei = Ei[fnnan]
+    ki = ki[fnnan]
+
+    return ki,Ei
 
