@@ -15,4 +15,8 @@ If you want to develop and contribute to the project, set up the development mod
 
 ## Usage ##
 
-Here's a simple example in an IPython [notebook](http://nbviewer.ipython.org/github/crocha700/pyspec/blob/master/examples/example_1d_spec.ipynb).
+Here are some simple examples 
+
+*An IPython [notebook](http://nbviewer.ipython.org/github/crocha700/pyspec/blob/master/examples/example_1d_spec.ipynb).
+
+*An IPython [notebook](http://nbviewer.ipython.org/github/crocha700/dp_spectra/blob/master/adcp/http://nbviewer.ipython.org/github/crocha700/pyspec/blob/master/examples/example_1d_spec.ipynb)
