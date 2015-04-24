@@ -8,50 +8,55 @@ try:
 except ImportError:
     pass
 
-class BCFDecomposition(object):
-      """ A class that represents the Buhler et al  JFM 2014 
-            Helmholtz decomposition """
-      def __init__(self,k,Cu,Cv):
+def spec_helm_decomp(k,Cu,Cv):
 
-        self.k = k
-        self.Cu = Cu
-        self.Cv = Cv
-        self.dk = k[1]-k[0]
-       
-        s = np.log(self.k)
+    """  it computes the Buhler et al  JFM 2014 
+            Helmholtz decomposition. That is,
+            it splits the across-track/along-track
+            KE spectra into rotational and divergent 
+            components.
+            
+    Inputs
+    ==========
+    - k: wavenumber
+    - Cu: spectrum of across-track velocity
+    - Cv: spectrum of along-track velocity
+
+    Outputs
+    ==========
+    - Cpsi: rotational component of the KE spectrum
+    - Cphi: divergent component of the KE spectrum
+
+                                                  """
+    dk = k[1]-k[0]   
+    s = np.log(k)
         
-        Fphi = np.zeros_like(self.Cu)
-        Fpsi = np.zeros_like(self.Cu)
-        self.Cphi = np.zeros_like(self.Cu)
-        self.Cpsi = np.zeros_like(self.Cu)
+    Fphi = np.zeros_like(Cu)
+    Fpsi = np.zeros_like(Cu)
+    Cphi = np.zeros_like(Cu)
+    Cpsi = np.zeros_like(Cu)
 
-        for i in range(s.size-1):
+    for i in range(s.size-1):
 
-            ds = np.diff(s[i:])
+        ds = np.diff(s[i:])
 
-            sh = sinh(s[i]-s[i:])
-            ch = cosh(s[i]-s[i:])
+        sh = sinh(s[i]-s[i:])
+        ch = cosh(s[i]-s[i:])
 
-            cu = self.Cu[i:]
-            cv = self.Cv[i:]
+        # the function to integrate
+        Fp = Cu[i:]*sh + Cv[i:]*ch
+        Fs = Cv[i:]*sh + Cu[i:]*ch
 
-            # the function to integrate
-            Fp = cu*sh + cv*ch
-            Fs = cv*sh + cu*ch
-
-            # integrate using simpsons rule
-            Fpsi[i] = integrate.simps(Fs,s[i:])
-            Fphi[i] = integrate.simps(Fp,s[i:])
+        # integrate using Simpson's rule
+        Fpsi[i] = integrate.simps(Fs,s[i:])
+        Fphi[i] = integrate.simps(Fp,s[i:])
 
         # zero out unphysical values
         Fpsi[Fpsi < 0.] = 0.
         Fphi[Fphi < 0.] = 0.
 
-        # now compute rotational and divergent components
-        self.Cpsi = Fpsi - self.k*np.gradient(Fpsi,self.dk)
-        self.Cphi = Fphi - self.k*np.gradient(Fphi,self.dk)
+    # compute rotational and divergent components
+    Cpsi = Fpsi - Fphi + Cu
+    Cphi = Fphi - Fpsi + Cv
 
-
-        
-        
-
+    return Cpsi,Cphi
