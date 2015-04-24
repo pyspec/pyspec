@@ -19,4 +19,4 @@ Here are some simple examples
 
 * An IPython [notebook](http://nbviewer.ipython.org/github/crocha700/pyspec/blob/master/examples/example_1d_spec.ipynb) describing a single calculation of one-dimensional wavenumber spectra.
 
-* An IPython [notebook](http://nbviewer.ipython.org/github/crocha700/dp_spectra/blob/master/adcp/buhler_etal_decomposition.ipyn) showcasing the decomposition of one-dimensional kinetic energy spectra into rotational and divergent components.
+* An IPython [notebook](http://nbviewer.ipython.org/github/crocha700/dp_spectra/blob/master/adcp/buhler_etal_decomposition.ipynb) showcasing the decomposition of one-dimensional kinetic energy spectra into rotational and divergent components.
