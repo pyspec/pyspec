@@ -1,7 +1,7 @@
 # pyspec #
 ## A Pythonic package for spectral analysis ##
 
-This is an on-going project in which I'm gathering codes for spectral analysis that I've been developing for my own research in oceanography. In particular most of these codes were developed for a project on the horizontal wavenumber spectra in Drake Passage ([dp_spectra](https://github.com/crocha700/dp_spectra)). Contributions are very welcome.
+This is an on-going project in which I'm gathering codes for spectral analysis that I've been developing for my own research in oceanography. In particular, most of these codes were developed for a project on the horizontal wavenumber spectra in Drake Passage ([dp_spectra](https://github.com/crocha700/dp_spectra)). Contributions are very welcome.
 
 ## Installation ##
 
