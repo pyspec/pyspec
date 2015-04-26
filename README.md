@@ -20,3 +20,6 @@ Here are some simple examples
 * An IPython [notebook](http://nbviewer.ipython.org/github/crocha700/pyspec/blob/master/examples/example_1d_spec.ipynb) describing a single calculation of one-dimensional wavenumber spectra.
 
 * An IPython [notebook](http://nbviewer.ipython.org/github/crocha700/dp_spectra/blob/master/adcp/buhler_etal_decomposition.ipynb) showcasing the decomposition of one-dimensional kinetic energy spectra into rotational and divergent components.
+
+* An IPython [notebook](http://nbviewer.ipython.org/github/crocha700/pyspec/blob/master/examples/example_2d_spectra.ipynb) showing the basic usage of **pyspec** to compute 2D spectrum and its associated isotropic spectrum. This notebooks also showcases the estimation of confidence limits.
+
