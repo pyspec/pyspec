@@ -21,5 +21,9 @@ Here are some simple examples
 
 * An IPython [notebook](http://nbviewer.ipython.org/github/crocha700/dp_spectra/blob/master/adcp/buhler_etal_decomposition.ipynb) showcasing the decomposition of one-dimensional kinetic energy spectra into rotational and divergent components.
 
-* An IPython [notebook](http://nbviewer.ipython.org/github/crocha700/pyspec/blob/master/examples/example_2d_spectra.ipynb) showing the basic usage of **pyspec** to compute 2D spectrum and its associated isotropic spectrum. This notebooks also showcases the estimation of confidence limits.
+* An IPython [notebook](http://nbviewer.ipython.org/github/crocha700/pyspec/blob/master/examples/example_2d_spectra.ipynb) showing the basic usage of **pyspec** to compute 2D spectrum and its associated isotropic spectrum. This notebook also showcases the estimation of confidence limits.
+
+## Funding ##
+Part of this package was developed for a project funded by the NASA Ocean Surface Topography Science Team (NNX13AE44G) and the NSF Polar Program (PLR-1341431). The leading developer is currently supported by NSF (OCE 1357047).
+
 
