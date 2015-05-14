@@ -3,6 +3,9 @@
 
 This is an on-going project in which I'm gathering codes for spectral analysis that I've been developing for my own research in oceanography. In particular, most of these codes were developed for a project on the horizontal wavenumber spectra in Drake Passage ([dp_spectra](https://github.com/crocha700/dp_spectra)). Contributions are very welcome.
 
+## Dependencies ##
+pyspec assumes you have basic Python packages for scientific applications (scipy, numpy, etc). I strongly encourage you to install the free [anaconda](https://store.continuum.io/cshop/anaconda/) distribution.
+
 ## Installation ##
 
 This is a legit python package. You can install it
