@@ -8,6 +8,16 @@ try:
 except ImportError:
     pass
 
+def diff_central(x, y):
+    x0 = x[:-2]
+    x1 = x[1:-1]
+    x2 = x[2:]
+    y0 = y[:-2]
+    y1 = y[1:-1]
+    y2 = y[2:]
+    f = (x2 - x1)/(x2 - x0)
+    return (1-f)*(y2 - y1)/(x2 - x1) + f*(y1 - y0)/(x1 - x0)
+
 def spec_helm_decomp(k,Cu,Cv,GM=False):
 
     """  it computes the Buhler et al  JFM 2014
@@ -38,7 +48,7 @@ def spec_helm_decomp(k,Cu,Cv,GM=False):
 
     # assume GM for decomposing into wave and vortex
     if GM:
-        gm = np.load("../data/gm_omega_star.npz")
+        gm = np.load("/Users/crocha/Dropbox/research/dp_spectra/GM/gm_omega_star.npz")
         f2omg2 = gm['rgm']
         ks = gm['k']*1.e3
 
