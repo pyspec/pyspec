@@ -8,14 +8,14 @@ try:
 except ImportError:
     pass
 
-def spec_helm_decomp(k,Cu,Cv):
+def spec_helm_decomp(k,Cu,Cv,GM=False):
 
-    """  it computes the Buhler et al  JFM 2014 
+    """  it computes the Buhler et al  JFM 2014
             Helmholtz decomposition. That is,
             it splits the across-track/along-track
-            KE spectra into rotational and divergent 
+            KE spectra into rotational and divergent
             components.
-            
+
     Inputs
     ==========
     - k: wavenumber
@@ -28,13 +28,19 @@ def spec_helm_decomp(k,Cu,Cv):
     - Cphi: divergent component of the KE spectrum
 
                                                   """
-    dk = k[1]-k[0]   
+    dk = k[1]-k[0]
     s = np.log(k)
-        
+
     Fphi = np.zeros_like(Cu)
     Fpsi = np.zeros_like(Cu)
     Cphi = np.zeros_like(Cu)
     Cpsi = np.zeros_like(Cu)
+
+    # assume GM for decomposing into wave and vortex
+    if GM:
+        gm = np.load("../data/gm_omega_star.npz")
+        f2omg2 = gm['rgm']
+        ks = gm['k']*1.e3
 
     for i in range(s.size-1):
 
@@ -59,4 +65,22 @@ def spec_helm_decomp(k,Cu,Cv):
     Cpsi = Fpsi - Fphi + Cu
     Cphi = Fphi - Fpsi + Cv
 
-    return Cpsi,Cphi
+    if GM:
+
+        f2omg2i = np.interp(k,ks,f2omg2)
+
+        Cv_w = f2omg2i*Fphi - Fpsi + Cv
+        Cv_v = Cv - Cv_w
+    
+        kdkromg = diff_central(ks, f2omg2)
+        kdkromg  = np.interp(k,ks[1:-1],kdkromg)
+
+        Cu_w = -k*kdkromg*Fphi + f2omg2i*(-Fpsi+Cv) + Fphi
+        Cu_v = Cu - Cu_w
+
+        return Cpsi,Cphi, Cu_w,Cv_w, Cu_v,Cv_v
+    else:
+        return Cpsi,Cphi
+
+
+
