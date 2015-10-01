@@ -1,6 +1,5 @@
-# pyspec #
+# pyspec # [![DOI](https://zenodo.org/badge/doi/10.5281/zenodo.31596.svg)](http://dx.doi.org/10.5281/zenodo.31596)
 ## A Pythonic package for spectral analysis ##
-[![DOI](https://zenodo.org/badge/doi/10.5281/zenodo.31596.svg)](http://dx.doi.org/10.5281/zenodo.31596)
 
 
 This is an on-going project in which I'm gathering codes for spectral analysis that I've been developing for my own research in oceanography. In particular, most of these codes were developed for a project on the horizontal wavenumber spectra in Drake Passage ([dp_spectra](https://github.com/crocha700/dp_spectra)). Contributions are very welcome.
