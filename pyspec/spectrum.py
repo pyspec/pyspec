@@ -115,6 +115,9 @@ class TWODimensional_spec(object):
         self.kappa2 = self.kk1**2 + self.kk2**2
         self.kappa = np.sqrt(self.kappa2)
 
+        self.calc_spectrum()
+        self.ki,self.ispec =  calc_ispec(self.kk1,self.kk2,self.spec)
+
     def calc_spectrum(self):
         """ calculates the spectrum """
         self.phih = np.fft.rfft2(self.phi)
@@ -136,24 +139,6 @@ class TWODimensional_spec(object):
                     self.var_dens[:,-1]
             self.var = self.var_dens.sum()*self.dk1*self.dk2
 
-
-    def calc_ispec(self):
-        """ calculates isotropic spectrum """
-        if self.kk1.max()>self.kk2.max():
-            kmax = self.kk2.max()
-        else:
-            kmax = self.kk1.max()
-
-        # create radial wavenumber
-        self.dkr = np.sqrt(self.dk1**2 + self.dk2**2)
-        self.kr =  np.arange(self.dkr/2.,kmax+self.dkr,self.dkr)
-        self.ispec = np.zeros(self.kr.size)
-
-        for i in range(self.kr.size):
-            fkr =  (self.kappa>=self.kr[i]-self.dkr/2) \
-                    & (self.kappa<=self.kr[i]+self.dkr/2)
-            dth = pi / (fkr.sum()-1)
-            self.ispec[i] = self.spec[fkr].sum() * self.kr[i] * dth
 
 def spec_error(E,sn,ci=.95):
 
@@ -247,3 +232,40 @@ def avg_per_decade(k,E,nbins = 10):
 
     return ki,Ei
 
+def calc_ispec(k,l,E):
+    """ Calculates the azimuthally-averaged spectrum
+
+        Parameters
+        ===========
+        - E is the two-dimensional spectrum
+        - k is the wavenumber is the x-direction
+        - l is the wavenumber in the y-direction
+
+        Output
+        ==========
+        - kr: the radial wavenumber
+        - Er: the azimuthally-averaged spectrum """
+    
+    dk = np.abs(k[2]-k[1])
+    dl = np.abs(l[2]-l[1])
+
+    k, l = np.meshgrid(k,l)
+
+    wv = np.sqrt(k**2+l**2)
+    
+    if k.max()>l.max():
+        kmax = l.max()
+    else:
+        kmax = k.max()
+        
+    # create radial wavenumber
+    dkr = np.sqrt(dk**2 + dl**2)
+    kr =  np.arange(dkr/2.,kmax+dkr/2.,dkr)
+    Er = np.zeros(kr.size)
+    
+    for i in range(kr.size):
+        fkr =  (wv>=kr[i]-dkr/2) & (wv<=kr[i]+dkr/2)
+        dth = np.pi / (fkr.sum()-1)
+        Er[i] = (E[fkr]*wv[fkr]*dth).sum()
+        
+    return kr, Er
