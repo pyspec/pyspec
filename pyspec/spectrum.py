@@ -153,7 +153,7 @@ def spec_error(E,sn,ci=.95):
 
         Output
         ==========
-        lower (El) and upper (Eu) bounds on E       """
+        lower (El) and upper (Eu) bounds on E """
 
     dbin = .005
     yN = np.arange(0,2.+dbin,dbin)
@@ -269,3 +269,23 @@ def calc_ispec(k,l,E):
         Er[i] = (E[fkr]*wv[fkr]*dth).sum()
         
     return kr, Er
+
+def spectral_slope(k,E,kmin,kmax,stdE):
+    ''' compute spectral slope in log space in
+        a wavenumber subrange [kmin,kmax],
+        m: spectral slope; mm: uncertainty'''
+
+    fr = np.where((k>=kmin)&(k<=kmax))
+
+    ki = np.matrix((np.log10(k[fr]))).T
+    Ei = np.matrix(np.log10(np.real(E[fr]))).T
+    dd = np.matrix(np.eye(ki.size)*((np.abs(np.log10(stdE)))**2))
+
+    G = np.matrix(np.append(np.ones((ki.size,1)),ki,axis=1))
+    Gg = ((G.T*G).I)*G.T
+    m = Gg*Ei
+    mm = np.sqrt(np.array(Gg*dd*Gg.T)[1,1])
+    yfit = np.array(G*m)
+    m = np.array(m)[1]
+
+    return m, mm    
