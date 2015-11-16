@@ -1,6 +1,7 @@
 import numpy as np
 from numpy import pi
 from scipy.special import gammainc
+from scipy import signal
 try:
     import mkl
     np.use_fastnumpy = True
@@ -181,6 +182,63 @@ def spec_error(E,sn,ci=.95):
 
     return El, Eu 
 
+
+# for llc output only; this is temporary
+def spec_est(A,d,axis=1,window=True,detrend=True, prewhiten=False):
+
+    l1,l2,l3 = A.shape
+
+    if axis==1:
+        l = l2
+        if prewhiten:
+            if l3>1:
+                _,A,_ = np.gradient(A,d,d,1.)
+            else:
+                _,A = np.gradient(A.squeeze(),d,d)
+                A = A[...,np.newaxis]
+        if detrend:
+            A = signal.detrend(A,axis=1,type='linear')
+        if window:
+            win = np.hanning(l)
+            win = (l/(win**2).sum())*win
+            win = win[np.newaxis,:,np.newaxis]
+        else:
+            win = np.ones(l)[np.newaxis,:,np.newaxis]
+    else:
+        l = l1
+        if prewhiten:
+            if l3 >1:
+                A,_,_ = np.gradient(A,d,d,1.)
+            else:
+                A,_ = np.gradient(A.squeeze(),d,d)
+                A = A[...,np.newaxis]
+        if detrend:
+            A = signal.detrend(A,axis=0,type='linear')
+        if window:
+            win = np.hanning(l)
+            win = (l/(win**2).sum())*win
+            win = win[...,np.newaxis,np.newaxis]
+        else:
+            win = np.ones(l)[...,np.newaxis,np.newaxis]    
+
+    df = 1./(d*l)
+    f = np.arange(0,l/2+1)*df 
+    
+    Ahat = np.fft.rfft(win*A,axis=axis)
+    Aabs = 2 * (Ahat*Ahat.conjugate()) / l
+
+    if prewhiten:
+
+        if axis==1:
+            fd = 2*np.pi*f[np.newaxis,:, np.newaxis]
+        else:
+            fd = 2*np.pi*f[...,np.newaxis,np.newaxis]
+
+        
+        Aabs = Aabs/(fd**2)
+        Aabs[0,0] = 0.
+
+    return Aabs,f
 
 def yNlu(sn,yN,ci):
     """ compute yN[l] yN[u], that is, the lower and 
