@@ -71,7 +71,7 @@ class TWODimensional_spec(object):
         self.phi = phi  # two dimensional real field
         self.d1 = d1
         self.d2 = d2
-        self.n1,self.n2 = phi.shape
+        self.n2,self.n1 = phi.shape
         self.L1 = d1*self.n1
         self.L2 = d2*self.n2
 
@@ -93,8 +93,12 @@ class TWODimensional_spec(object):
         # calculate total var
         self.calc_var()
            
-      # calculate isotropic spectrum
-        self.calc_ispec()
+        # calculate isotropic spectrum
+        #self.calc_ispec()
+
+        self.ki,self.ispec =  calc_ispec(self.k1,self.k2,self.spec)
+
+        self.spec =  np.fft.fftshift(self.spec,axes=0)
 
     def calc_freq(self):
         """ calculate array of spectral variable (frequency or 
@@ -105,26 +109,23 @@ class TWODimensional_spec(object):
         self.dk2 = 1./self.L2
 
         # wavenumber grids
-        k2 = self.dk2*np.append( np.arange(0.,self.n2/2), \
-            np.arange(-self.n2/2,0.) )
-        k1 = self.dk1*np.arange(0.,self.n1/2+1)
+        self.k2 = self.dk2*np.append( np.arange(0.,self.n2/2), \
+                  np.arange(-self.n2/2,0.) )
+        self.k1 = self.dk1*np.arange(0.,self.n1/2+1)
 
-        self.kk1,self.kk2 = np.meshgrid(k1,k2)
+        self.kk1,self.kk2 = np.meshgrid(self.k1,self.k2)
     
         self.kk1 = np.fft.fftshift(self.kk1,axes=0)
         self.kk2 = np.fft.fftshift(self.kk2,axes=0)
         self.kappa2 = self.kk1**2 + self.kk2**2
         self.kappa = np.sqrt(self.kappa2)
 
-        self.calc_spectrum()
-        self.ki,self.ispec =  calc_ispec(self.kk1,self.kk2,self.spec)
 
     def calc_spectrum(self):
         """ calculates the spectrum """
         self.phih = np.fft.rfft2(self.phi)
         self.spec = 2.*(self.phih*self.phih.conj()).real/ (self.dk1*self.dk2)\
                 / (self.n1*self.n2)**2
-        self.spec =  np.fft.fftshift(self.spec,axes=0)
 
     def calc_var(self):
         """ compute variance of p from Fourier coefficients ph """
@@ -181,7 +182,6 @@ def spec_error(E,sn,ci=.95):
         Eu = E/yNu
 
     return El, Eu 
-
 
 
 # for llc output only; this is temporary
@@ -378,8 +378,9 @@ def calc_ispec(k,l,E):
     dkr = np.sqrt(dk**2 + dl**2)
     kr =  np.arange(dkr/2.,kmax+dkr/2.,dkr)
     Er = np.zeros(kr.size)
-    
+
     for i in range(kr.size):
+
         fkr =  (wv>=kr[i]-dkr/2) & (wv<=kr[i]+dkr/2)
         dth = np.pi / (fkr.sum()-1)
         Er[i] = (E[fkr]*wv[fkr]*dth).sum()
