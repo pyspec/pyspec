@@ -85,7 +85,7 @@ class TWODimensional_spec(object):
         win2 =  np.hanning(self.n2)
         win2 =  (self.n2/(win2**2).sum())*win2
 
-        win = win1[...,np.newaxis]*win2[np.newaxis,...]
+        win = win1[np.newaxis,...]*win2[...,np.newaxis]
 
         self.phi *= win
 
