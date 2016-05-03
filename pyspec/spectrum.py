@@ -18,6 +18,11 @@ class Spectrum(object):
         self.dt = dt        # sampling interval
         self.n = phi.size 
 
+        win =  np.hanning(self.n)
+        win =  (self.n/(win**2).sum())*win
+
+        self.phi *= win
+
         # test if n is even
         if (self.n%2):
             self.neven = False
@@ -74,6 +79,17 @@ class TWODimensional_spec(object):
         self.n2,self.n1 = phi.shape
         self.L1 = d1*self.n1
         self.L2 = d2*self.n2
+
+        win1 =  np.hanning(self.n1)
+        win1 =  (self.n1/(win1**2).sum())*win1
+        win2 =  np.hanning(self.n2)
+        win2 =  (self.n2/(win2**2).sum())*win2
+
+        win = win1[...,np.newaxis]*win2[np.newaxis,...]
+
+        self.phi *= win
+
+
 
         # test eveness
         if (self.n1 % 2):
