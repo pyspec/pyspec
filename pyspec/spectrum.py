@@ -205,7 +205,7 @@ class THREEDimensional_spec(object):
         self.k1 = self.dk2*np.arange(0.,self.n1/2+1)
         self.k2 = self.dk1*np.append( np.arange(0.,self.n2/2), \
                   np.arange(-self.n2/2,0.) )
-        self.k3 = self.dk2*np.append( np.arange(0.,self.n3/2), \
+        self.k3 = self.dk3*np.append( np.arange(0.,self.n3/2), \
               np.arange(-self.n3/2,0.) )
 
         self.kk1,self.kk2,self.kk3 = np.meshgrid(self.k1,self.k2,self.k3)
