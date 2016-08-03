@@ -184,6 +184,46 @@ class THREEDimensional_spec(object):
 
         self.phi = self.phi*win
 
+        # calculate frequencies
+        self.calc_freq()
+
+        # calculate spectrum
+        self.calc_spectrum()
+
+        # the isotropic spectrum
+        self.ki,self.ispec =  calc_ispec(self.k1,self.k2,self.spec,ndim=3)
+
+
+    def calc_freq(self):
+        """ calculate array of spectral variable (frequency or
+                wavenumber) in cycles per unit of L """
+
+        # wavenumber one (equals to dk1 and dk2)
+        self.dk1 = 1./self.L1
+        self.dk2 = 1./self.L2
+        self.dk3 = 1./self.L3
+
+        # wavenumber grids
+        self.k1 = self.dk2*np.arange(0.,self.n1/2+1)
+        self.k2 = self.dk1*np.append( np.arange(0.,self.n2/2), \
+                  np.arange(-self.n1/2,0.) )
+        self.k3 = self.dk2*np.append( np.arange(0.,self.n3/2), \
+              np.arange(-self.n3/2,0.) )
+
+        self.kk1,self.kk2,self.kk3 = np.meshgrid(self.k1,self.k2,self.k3)
+
+        self.kk1 = np.fft.fftshift(self.kk1,axes=0)
+        self.kk2 = np.fft.fftshift(self.kk2,axes=0)
+        self.kk3 = np.fft.fftshift(self.kk3,axes=0)
+
+        self.kappa2 = self.kk1**2 + self.kk2**2 + self.kk3**2
+        self.kappa = np.sqrt(self.kappa2)
+
+    def calc_spectrum(self):
+        """ calculates the spectrum """
+        self.phih = np.fft.rfftn(self.phi,axes=(0,-1,-2))
+        self.spec = 2.*(self.phih*self.phih.conj()).real/(self.dk1*self.dk2*self.dk3)\
+                / (self.n1*self.n2*self.n3)**2
 
 # utilities
 def spec_error(E,sn,ci=.95):
@@ -392,7 +432,7 @@ def avg_per_decade(k,E,nbins = 10):
 
     return ki,Ei
 
-def calc_ispec(k,l,E):
+def calc_ispec(k,l,E,ndim=2):
     """ Calculates the azimuthally-averaged spectrum
 
         Parameters
@@ -418,18 +458,21 @@ def calc_ispec(k,l,E):
     else:
         kmax = k.max()
 
-    # create radial wavenumber
+    if ndim==3:
+        nl, nk, nomg = E.shape
+    elif ndim==2:
+        nomg = 1
+
     dkr = np.sqrt(dk**2 + dl**2)
     kr =  np.arange(dkr/2.,kmax+dkr/2.,dkr)
-    Er = np.zeros(kr.size)
+    Er = np.zeros((kr.size,nomg))
 
     for i in range(kr.size):
 
         fkr =  (wv>=kr[i]-dkr/2) & (wv<=kr[i]+dkr/2)
         dth = np.pi / (fkr.sum()-1)
-        Er[i] = (E[fkr]*wv[fkr]*dth).sum()
-
-    return kr, Er
+        Er[i,:] = (E[fkr]*(wv[fkr][:,np.newaxis])*dth).sum(axis=(0))
+    return kr, Er.squeeze()
 
 def spectral_slope(k,E,kmin,kmax,stdE):
     ''' compute spectral slope in log space in
