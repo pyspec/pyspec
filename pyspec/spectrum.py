@@ -89,8 +89,6 @@ class TWODimensional_spec(object):
 
         self.phi *= win
 
-
-
         # test eveness
         if (self.n1 % 2):
             self.n1even = False
@@ -206,7 +204,7 @@ class THREEDimensional_spec(object):
         # wavenumber grids
         self.k1 = self.dk2*np.arange(0.,self.n1/2+1)
         self.k2 = self.dk1*np.append( np.arange(0.,self.n2/2), \
-                  np.arange(-self.n1/2,0.) )
+                  np.arange(-self.n2/2,0.) )
         self.k3 = self.dk2*np.append( np.arange(0.,self.n3/2), \
               np.arange(-self.n3/2,0.) )
 
