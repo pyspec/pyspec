@@ -158,6 +158,33 @@ class TWODimensional_spec(object):
             self.var = self.var_dens.sum()*self.dk1*self.dk2
 
 
+class THREEDimensional_spec(object):
+    """ A class that represent a three dimensional spectrum
+            for real signals """
+
+    def __init__(self,phi,d1,d2,d3):
+
+        self.phi = phi  # two dimensional real field
+        self.d1 = d1
+        self.d2 = d2
+        self.d3 = d3
+        self.n2,self.n1, self.n3 = phi.shape
+        self.L1 = d1*self.n1
+        self.L2 = d2*self.n2
+        self.L3 = d3*self.n3
+
+        win1 =  np.hanning(self.n1)
+        win1 =  (self.n1/(win1**2).sum())*win1
+        win2 =  np.hanning(self.n2)
+        win2 =  (self.n2/(win2**2).sum())*win2
+        win3 =  np.hanning(self.n3)
+        win3 =  (self.n3/(win3**2).sum())*win3
+        win = win1[np.newaxis]*win2[...,np.newaxis]
+        win = win[...,np.newaxis]*win3[np.newaxis,np.newaxis]
+
+        self.phi = self.phi*win
+
+
 # utilities
 def spec_error(E,sn,ci=.95):
 
