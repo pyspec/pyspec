@@ -9,14 +9,14 @@ except ImportError:
     pass
 
 class Spectrum(object):
-    """ A class that represents a single realization of 
+    """ A class that represents a single realization of
             the one-dimensional spectrum  of a given field phi """
-    
+
     def __init__(self,phi,dt):
 
         self.phi = phi      # field to be analyzed
         self.dt = dt        # sampling interval
-        self.n = phi.size 
+        self.n = phi.size
 
         win =  np.hanning(self.n)
         win =  (self.n/(win**2).sum())*win
@@ -28,7 +28,7 @@ class Spectrum(object):
             self.neven = False
         else:
             self.neven = True
-    
+
         # calculate frequencies
         self.calc_freq()
 
@@ -36,10 +36,10 @@ class Spectrum(object):
         self.calc_spectrum()
 
         # calculate total var
-        self.calc_var() 
+        self.calc_var()
 
     def calc_freq(self):
-        """ calculate array of spectral variable (frequency or 
+        """ calculate array of spectral variable (frequency or
                 wavenumber) in cycles per unit of L """
 
         self.df = 1./((self.n-1)*self.dt)
@@ -48,7 +48,7 @@ class Spectrum(object):
             self.f = self.df*np.arange(self.n/2+1)
         else:
             self.f = self.df*np.arange( (self.n-1)/2.  + 1 )
-            
+
     def calc_spectrum(self):
         """ compute the 1d spectrum of a field phi """
 
@@ -68,7 +68,7 @@ class Spectrum(object):
         self.var = self.df*self.spec[1:].sum()  # do not consider zeroth frequency
 
 class TWODimensional_spec(object):
-    """ A class that represent a two dimensional spectrum 
+    """ A class that represent a two dimensional spectrum
             for real signals """
 
     def __init__(self,phi,d1,d2):
@@ -108,7 +108,7 @@ class TWODimensional_spec(object):
 
         # calculate total var
         self.calc_var()
-           
+
         # calculate isotropic spectrum
         #self.calc_ispec()
 
@@ -117,7 +117,7 @@ class TWODimensional_spec(object):
         self.spec =  np.fft.fftshift(self.spec,axes=0)
 
     def calc_freq(self):
-        """ calculate array of spectral variable (frequency or 
+        """ calculate array of spectral variable (frequency or
                 wavenumber) in cycles per unit of L """
 
         # wavenumber one (equals to dk1 and dk2)
@@ -130,7 +130,7 @@ class TWODimensional_spec(object):
         self.k1 = self.dk1*np.arange(0.,self.n1/2+1)
 
         self.kk1,self.kk2 = np.meshgrid(self.k1,self.k2)
-    
+
         self.kk1 = np.fft.fftshift(self.kk1,axes=0)
         self.kk2 = np.fft.fftshift(self.kk2,axes=0)
         self.kappa2 = self.kk1**2 + self.kk2**2
@@ -158,9 +158,10 @@ class TWODimensional_spec(object):
             self.var = self.var_dens.sum()*self.dk1*self.dk2
 
 
+# utilities
 def spec_error(E,sn,ci=.95):
 
-    """ Computes confidence interval for one-dimensional spectral 
+    """ Computes confidence interval for one-dimensional spectral
         estimate E.
 
         Parameters
@@ -184,20 +185,20 @@ def spec_error(E,sn,ci=.95):
         n = 0
 
     if n:
-        
+
         assert n == E.size, " *** sn has different size than E "
 
         for i in range(n):
             yNl,yNu = yNlu(sn[i],yN=yN,ci=ci)
             El[i] = E[i]/yNl
             Eu[i] = E[i]/yNu
-            
+
     else:
         yNl,yNu = yNlu(sn,yN=yN,ci=ci)
         El = E/yNl
         Eu = E/yNu
 
-    return El, Eu 
+    return El, Eu
 
 
 # for llc output only; this is temporary
@@ -236,12 +237,12 @@ def spec_est(A,d,axis=2,window=True,detrend=True, prewhiten=False):
             win = (l/(win**2).sum())*win
             win = win[np.newaxis,...,np.newaxis,np.newaxis]
         else:
-            win = np.ones(l)[np.newaxis,...,np.newaxis,np.newaxis]    
+            win = np.ones(l)[np.newaxis,...,np.newaxis,np.newaxis]
 
 
     df = 1./(d*l)
-    f = np.arange(0,l/2+1)*df 
-    
+    f = np.arange(0,l/2+1)*df
+
     Ahat = np.fft.rfft(win*A,axis=axis)
     Aabs = 2 * (Ahat*Ahat.conjugate()) / l
 
@@ -251,7 +252,7 @@ def spec_est(A,d,axis=2,window=True,detrend=True, prewhiten=False):
             fd = 2*np.pi*f[np.newaxis,:, np.newaxis]
         else:
             fd = 2*np.pi*f[...,np.newaxis,np.newaxis]
- 
+
         Aabs = Aabs/(fd**2)
         Aabs[0,0] = 0.
 
@@ -293,11 +294,11 @@ def spec_est(A,d,axis=2,window=True,detrend=True, prewhiten=False):
 #            win = (l/(win**2).sum())*win
 #            win = win[...,np.newaxis,np.newaxis]
 #        else:
-#            win = np.ones(l)[...,np.newaxis,np.newaxis]    
+#            win = np.ones(l)[...,np.newaxis,np.newaxis]
 #
 #    df = 1./(d*l)
-#    f = np.arange(0,l/2+1)*df 
-#    
+#    f = np.arange(0,l/2+1)*df
+#
 #    Ahat = np.fft.rfft(win*A,axis=axis)
 #    Aabs = 2 * (Ahat*Ahat.conjugate()) / l
 #
@@ -308,18 +309,18 @@ def spec_est(A,d,axis=2,window=True,detrend=True, prewhiten=False):
 #        else:
 #            fd = 2*np.pi*f[...,np.newaxis,np.newaxis]
 #
-#        
+#
 #        Aabs = Aabs/(fd**2)
 #        Aabs[0,0] = 0.
 #
 #    return Aabs,f
 
 def yNlu(sn,yN,ci):
-    """ compute yN[l] yN[u], that is, the lower and 
+    """ compute yN[l] yN[u], that is, the lower and
                 upper limit of yN """
-   
+
     # cdf of chi^2 dist. with 2*sn DOF
-    cdf = gammainc(sn,sn*yN) 
+    cdf = gammainc(sn,sn*yN)
 
     # indices that delimit the wedge of the conf. interval
     fl = np.abs(cdf - ci).argmin()
@@ -377,19 +378,19 @@ def calc_ispec(k,l,E):
         ==========
         - kr: the radial wavenumber
         - Er: the azimuthally-averaged spectrum """
-    
+
     dk = np.abs(k[2]-k[1])
     dl = np.abs(l[2]-l[1])
 
     k, l = np.meshgrid(k,l)
 
     wv = np.sqrt(k**2+l**2)
-    
+
     if k.max()>l.max():
         kmax = l.max()
     else:
         kmax = k.max()
-        
+
     # create radial wavenumber
     dkr = np.sqrt(dk**2 + dl**2)
     kr =  np.arange(dkr/2.,kmax+dkr/2.,dkr)
@@ -400,7 +401,7 @@ def calc_ispec(k,l,E):
         fkr =  (wv>=kr[i]-dkr/2) & (wv<=kr[i]+dkr/2)
         dth = np.pi / (fkr.sum()-1)
         Er[i] = (E[fkr]*wv[fkr]*dth).sum()
-        
+
     return kr, Er
 
 def spectral_slope(k,E,kmin,kmax,stdE):
@@ -421,4 +422,4 @@ def spectral_slope(k,E,kmin,kmax,stdE):
     yfit = np.array(G*m)
     m = np.array(m)[1]
 
-    return m, mm    
+    return m, mm
