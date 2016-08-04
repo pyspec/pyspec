@@ -85,10 +85,18 @@ def spec_helm_decomp(k,Cu,Cv,GM=False):
         kdkromg = diff_central(ks, f2omg2)
         kdkromg  = np.interp(k,ks[1:-1],kdkromg)
 
+        dFphi =  diff_central(k, Fphi)
+        #dFphi = np.gradient(Fphi,k)
+        dFphi  = np.interp(k,k[1:-1],dFphi.real)
+        E_w = Fphi - k*dFphi
+
         Cu_w = -k*kdkromg*Fphi + f2omg2i*(-Fpsi+Cv) + Fphi
         Cu_v = Cu - Cu_w
 
-        return Cpsi,Cphi, Cu_w,Cv_w, Cu_v,Cv_v
+        Cb_w = E_w - (Cu_w + Cv_w)/2.
+
+        return Cpsi,Cphi, Cu_w,Cv_w, Cu_v,Cv_v, E_w, Cb_w
+
     else:
         return Cpsi,Cphi
 
