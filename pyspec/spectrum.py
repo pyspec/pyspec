@@ -71,7 +71,7 @@ class TWODimensional_spec(object):
     """ A class that represent a two dimensional spectrum
             for real signals """
 
-    def __init__(self,phi,d1,d2):
+    def __init__(self,phi,d1,d2,detrend=True):
 
         self.phi = phi  # two dimensional real field
         self.d1 = d1
@@ -79,6 +79,12 @@ class TWODimensional_spec(object):
         self.n2,self.n1 = phi.shape
         self.L1 = d1*self.n1
         self.L2 = d2*self.n2
+
+        if detrend:
+            self.phi = signal.detrend(self.phi,axis=(-1),type='linear')
+            self.phi = signal.detrend(self.phi,axis=(-2),type='linear')
+        else:
+            pass
 
         win1 =  np.hanning(self.n1)
         win1 =  (self.n1/(win1**2).sum())*win1
