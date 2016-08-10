@@ -48,7 +48,7 @@ def spec_helm_decomp(k,Cu,Cv,GM=False):
 
     # assume GM for decomposing into wave and vortex
     if GM:
-        gm = np.load("/Users/crocha/Dropbox/research/dp_spectra/GM/gm_omega_star.npz")
+        gm = np.load("/Users/crocha/Projects/dp_spectra/GM/gm_omega_star.npz")
         f2omg2 = gm['rgm']
         ks = gm['k']*1.e3
 
