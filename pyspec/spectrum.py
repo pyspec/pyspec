@@ -73,16 +73,23 @@ class TWODimensional_spec(object):
 
     def __init__(self,phi,d1,d2,detrend=True):
 
-        self.phi = phi  # two dimensional real field
         self.d1 = d1
         self.d2 = d2
-        self.n2,self.n1 = phi.shape
+        self.ndim = phi.ndim
+
+        if self.ndim == 2:
+            self.n2,self.n1 = phi.shape
+            self.phi = phi[...,np.newaxis]
+        else:
+            self.n2,self.n1,_ = phi.shape
+            self.phi = phi
+
         self.L1 = d1*self.n1
         self.L2 = d2*self.n2
 
         if detrend:
-            self.phi = signal.detrend(self.phi,axis=(-1),type='linear')
-            self.phi = signal.detrend(self.phi,axis=(-2),type='linear')
+            self.phi = signal.detrend(self.phi,axis=(0),type='linear')
+            self.phi = signal.detrend(self.phi,axis=(1),type='linear')
         else:
             pass
 
@@ -92,6 +99,7 @@ class TWODimensional_spec(object):
         win2 =  (self.n2/(win2**2).sum())*win2
 
         win = win1[np.newaxis,...]*win2[...,np.newaxis]
+        win = win[...,np.newaxis]
 
         self.phi *= win
 
@@ -116,9 +124,11 @@ class TWODimensional_spec(object):
         # calculate isotropic spectrum
         #self.calc_ispec()
 
-        self.ki,self.ispec =  calc_ispec(self.k1,self.k2,self.spec)
+        self.ki,self.ispec =  calc_ispec(self.k1,self.k2,self.spec.squeeze()
+                                            , ndim=self.ndim)
 
         self.spec =  np.fft.fftshift(self.spec,axes=0)
+
 
     def calc_freq(self):
         """ calculate array of spectral variable (frequency or
@@ -143,7 +153,7 @@ class TWODimensional_spec(object):
 
     def calc_spectrum(self):
         """ calculates the spectrum """
-        self.phih = np.fft.rfft2(self.phi)
+        self.phih = np.fft.rfft2(self.phi,axes=(0,1))
         self.spec = 2.*(self.phih*self.phih.conj()).real/ (self.dk1*self.dk2)\
                 / (self.n1*self.n2)**2
 
@@ -472,10 +482,13 @@ def calc_ispec(k,l,E,ndim=2):
     Er = np.zeros((kr.size,nomg))
 
     for i in range(kr.size):
-
         fkr =  (wv>=kr[i]-dkr/2) & (wv<=kr[i]+dkr/2)
         dth = np.pi / (fkr.sum()-1)
-        Er[i,:] = (E[fkr]*(wv[fkr][:,np.newaxis])*dth).sum(axis=(0))
+        if ndim == 3:
+            Er[i,:] = (E[fkr]*(wv[fkr][:,np.newaxis])*dth).sum(axis=(0))
+        else:
+            Er[i,:] = (E[fkr]*(wv[fkr])*dth).sum(axis=(0))
+
     return kr, Er.squeeze()
 
 def spectral_slope(k,E,kmin,kmax,stdE):
