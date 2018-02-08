@@ -471,11 +471,17 @@ def calc_ispec(k,l,E,ndim=2):
     kr =  np.arange(dkr/2.,kmax+dkr/2.,dkr)
     Er = np.zeros((kr.size,nomg))
 
+
     for i in range(kr.size):
 
         fkr =  (wv>=kr[i]-dkr/2) & (wv<=kr[i]+dkr/2)
         dth = np.pi / (fkr.sum()-1)
-        Er[i,:] = (E[fkr]*(wv[fkr][:,np.newaxis])*dth).sum(axis=(0))
+        if ndim==2:
+            Er[i] = (E[fkr]*(wv[fkr]*dth)).sum()
+        elif ndim==3:
+            Er[i] = (E[fkr]*(wv[fkr]*dth)).sum(axis=(0,1))
+
+
     return kr, Er.squeeze()
 
 def spectral_slope(k,E,kmin,kmax,stdE):
