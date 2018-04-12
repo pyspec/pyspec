@@ -19,7 +19,7 @@ class Spectrum(object):
         self.n = phi.size
 
         win =  np.hanning(self.n)
-        win =  (self.n/(win**2).sum())*win
+        win =  np.sqrt(self.n/(win**2).sum())*win
 
         self.phi *= win
 
@@ -87,9 +87,9 @@ class TWODimensional_spec(object):
             pass
 
         win1 =  np.hanning(self.n1)
-        win1 =  (self.n1/(win1**2).sum())*win1
+        win1 =  np.sqrt(self.n1/(win1**2).sum())*win1
         win2 =  np.hanning(self.n2)
-        win2 =  (self.n2/(win2**2).sum())*win2
+        win2 =  np.sqrt(self.n2/(win2**2).sum())*win2
 
         win = win1[np.newaxis,...]*win2[...,np.newaxis]
 
