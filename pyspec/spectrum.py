@@ -8,19 +8,18 @@ try:
 except ImportError:
     pass
 
-class Spectrum(object):
+class Spectrum():
     """ A class that represents a single realization of
             the one-dimensional spectrum  of a given field phi """
 
-    def __init__(self,phi,dt):
+    def __init__(self, phi, dt, prewhiten=False, normalize=True):
 
-        self.phi = phi      # field to be analyzed
-        self.dt = dt        # sampling interval
+        self.phi = phi.copy()      # field to be analyzed
+        self.dt = dt               # sampling interval
         self.n = phi.size
 
         win =  np.hanning(self.n)
         win =  np.sqrt(self.n/(win**2).sum())*win
-
         self.phi *= win
 
         # test if n is even
@@ -33,7 +32,7 @@ class Spectrum(object):
         self.calc_freq()
 
         # calculate spectrum
-        self.calc_spectrum()
+        self.calc_spectrum(prewhiten=prewhiten, normalize=normalize)
 
         # calculate total var
         self.calc_var()
@@ -49,19 +48,29 @@ class Spectrum(object):
         else:
             self.f = self.df*np.arange( (self.n-1)/2.  + 1 )
 
-    def calc_spectrum(self):
+    def calc_spectrum(self, prewhiten=False, normalize=True):
         """ compute the 1d spectrum of a field phi """
+
+        if prewhiten:
+            self.phi = (self.phi[1:] - self.phi[:-1])/self.dt
 
         self.phih = np.fft.rfft(self.phi)
 
         # the factor of 2 comes from the symmetry of the Fourier coeffs
-        self.spec = 2.*(self.phih*self.phih.conj()).real / self.df /\
-                self.n**2
+        if normalize:
+            self.spec = 2.*(self.phih*self.phih.conj()).real / self.df / self.n**2
+        else:
+            self.spec = 2.*(self.phih*self.phih.conj()).real / self.df
 
         # the zeroth frequency should be counted only once
         self.spec[0] = self.spec[0]/2.
         if self.neven:
             self.spec[-1] = self.spec[-1]/2.
+
+        if prewhiten:
+            faux = self.f[1:]
+            self.spec = self.spec/(2*pi*faux)**2 # Re--redden the spectrum.
+            self.f = self.f[:-1]
 
     def calc_var(self):
         """ Compute total variance from spectrum """
