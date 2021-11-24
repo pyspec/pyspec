@@ -42,7 +42,7 @@ class Spectrum(object):
         """ calculate array of spectral variable (frequency or
                 wavenumber) in cycles per unit of L """
 
-        self.df = 1./((self.n-1)*self.dt)
+        self.df = 1./(self.n*self.dt)
 
         if self.neven:
             self.f = self.df*np.arange(self.n/2+1)
@@ -116,7 +116,7 @@ class TWODimensional_spec(object):
         # calculate isotropic spectrum
         #self.calc_ispec()
 
-        self.ki,self.ispec =  calc_ispec(self.k1,self.k2,self.spec)
+        #self.ki,self.ispec =  calc_ispec(self.k1,self.k2,self.spec)
 
         self.spec =  np.fft.fftshift(self.spec,axes=0)
 
@@ -168,7 +168,7 @@ class THREEDimensional_spec(object):
 
     def __init__(self,phi,d1,d2,d3):
 
-        self.phi = phi  # two dimensional real field
+        self.phi = phi
         self.d1 = d1
         self.d2 = d2
         self.d3 = d3
@@ -183,6 +183,7 @@ class THREEDimensional_spec(object):
         win2 =  (self.n2/(win2**2).sum())*win2
         win3 =  np.hanning(self.n3)
         win3 =  (self.n3/(win3**2).sum())*win3
+
         win = win1[np.newaxis]*win2[...,np.newaxis]
         win = win[...,np.newaxis]*win3[np.newaxis,np.newaxis]
 
@@ -195,7 +196,7 @@ class THREEDimensional_spec(object):
         self.calc_spectrum()
 
         # the isotropic spectrum
-        self.ki,self.ispec =  calc_ispec(self.k1,self.k2,self.spec,ndim=3)
+        #self.ki,self.ispec =  calc_ispec(self.k1,self.k2,self.spec,ndim=3)
 
 
     def calc_freq(self):
@@ -208,11 +209,13 @@ class THREEDimensional_spec(object):
         self.dk3 = 1./self.L3
 
         # wavenumber grids
-        self.k1 = self.dk2*np.arange(0.,self.n1/2+1)
-        self.k2 = self.dk1*np.append( np.arange(0.,self.n2/2), \
-                  np.arange(-self.n2/2,0.) )
-        self.k3 = self.dk3*np.append( np.arange(0.,self.n3/2), \
-              np.arange(-self.n3/2,0.) )
+        #self.k1 = self.dk1*np.append( np.arange(0.,self.n1/2), \
+        #          np.arange(-self.n1/2+1,0.) )
+        self.k1 = np.fft.fftfreq(self.n1, d=self.d1)
+        self.k2 = np.fft.fftfreq(self.n2, d=self.d2)
+        #self.k2 = self.dk2*np.append( np.arange(0.,self.n2/2), \
+        #      np.arange(-self.n2/2,0.) )
+        self.k3 = self.dk3*np.arange(0.,self.n3/2+1)
 
         self.kk1,self.kk2,self.kk3 = np.meshgrid(self.k1,self.k2,self.k3)
 
@@ -225,7 +228,7 @@ class THREEDimensional_spec(object):
 
     def calc_spectrum(self):
         """ calculates the spectrum """
-        self.phih = np.fft.rfftn(self.phi,axes=(0,-1,-2))
+        self.phih = np.fft.rfftn(self.phi,axes=(0,1,2))
         self.spec = 2.*(self.phih*self.phih.conj()).real/(self.dk1*self.dk2*self.dk3)\
                 / (self.n1*self.n2*self.n3)**2
 
