@@ -114,9 +114,9 @@ class TWODimensional_spec(object):
         self.calc_var()
 
         # calculate isotropic spectrum
-        #self.calc_ispec()
+        self.calc_ispec()
 
-        #self.ki,self.ispec =  calc_ispec(self.k1,self.k2,self.spec)
+        self.ki,self.ispec =  calc_ispec(self.k1,self.k2,self.spec)
 
         self.spec =  np.fft.fftshift(self.spec,axes=0)
 
