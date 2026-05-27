@@ -116,7 +116,7 @@ class TWODimensional_spec(object):
         # calculate isotropic spectrum
         self.calc_ispec()
 
-        self.ki,self.ispec =  calc_ispec(self.k1,self.k2,self.spec)
+        # self.ki,self.ispec =  calc_ispec(self.k1,self.k2,self.spec)
 
         self.spec =  np.fft.fftshift(self.spec,axes=0)
 
@@ -160,6 +160,42 @@ class TWODimensional_spec(object):
             self.var_dens[:,0],self.var_dens[:,-1] = self.var_dens[:,0]/2.,\
                     self.var_dens[:,-1]
             self.var = self.var_dens.sum()*self.dk1*self.dk2
+
+    def calc_ispec(self):
+        """ Calculates the azimuthally-averaged spectrum
+
+            Parameters
+            ===========
+            - E is the two-dimensional spectrum
+            - k is the wavenumber is the x-direction
+            - l is the wavenumber in the y-direction
+
+            Output
+            ==========
+            - kr: the radial wavenumber
+            - Er: the azimuthally-averaged spectrum """
+
+        dk = np.abs(self.k1[2]-self.k1[1])
+        dl = np.abs(self.k2[2]-self.k2[1])
+
+        k, l = np.meshgrid(self.k1,self.k2)
+        wv = np.sqrt(k**2+l**2)
+
+        if k.max()>l.max():
+            kmax = l.max()
+        else:
+            kmax = k.max()
+
+        nomg = 1
+
+        dkr = np.sqrt(dk**2 + dl**2)
+        self.ki =  np.arange(dkr/2.,kmax+dkr/2.,dkr)
+        self.ispec = np.zeros((self.ki.size,nomg))
+
+        for i in range(self.ki.size):
+            fkr =  (wv>=self.ki[i]-dkr/2) & (wv<=self.ki[i]+dkr/2)
+            dth = np.pi / (fkr.sum()-1)
+            self.ispec[i] = (self.spec[fkr]*(wv[fkr]*dth)).sum()
 
 
 class THREEDimensional_spec(object):
