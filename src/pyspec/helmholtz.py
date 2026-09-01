@@ -1,8 +1,20 @@
-"""Helmholtz (rotational/divergent) decomposition of horizontal KE spectra.
+"""Helmholtz (rotational/divergent) decomposition of horizontal velocity spectra.
 
 Implements the Buhler, Callies & Ferrari (2014, JFM) decomposition of
 across-track/along-track velocity spectra into rotational and divergent
 components, with an optional Garrett-Munk-based wave/vortex split.
+
+A note on units, since this is an easy place to get a factor of 2 wrong
+(see the worked example in the package's example notebooks): every
+spectrum in this module -- inputs and outputs alike -- follows the same
+convention as ``Cu``/``Cv``: a per-component *velocity variance* spectrum
+(units of velocity^2 per unit wavenumber), not a kinetic energy spectrum.
+Specific kinetic energy is KE = (u^2 + v^2)/2, so if you want an actual
+KE spectrum from any output here, you multiply by 0.5 yourself -- e.g.
+``0.5 * result.psi`` for the rotational KE spectrum, or
+``0.5 * (result.psi + result.phi)`` for the total. This is verified
+directly by the algorithm's construction: ``result.psi + result.phi``
+reconstructs ``Cu + Cv`` exactly (to machine precision), not half of it.
 """
 
 from __future__ import annotations
@@ -37,11 +49,16 @@ def _load_gm_spectrum() -> tuple[np.ndarray, np.ndarray]:
 
 @dataclass
 class HelmholtzDecomposition:
-    """Result of a Helmholtz decomposition of a horizontal KE spectrum.
+    """Result of a Helmholtz decomposition of horizontal velocity spectra.
 
     ``psi`` (rotational) and ``phi`` (divergent) are always populated.
     The wave/vortex fields are only populated when the decomposition was
     run with ``gm=True``; otherwise they are ``None``.
+
+    All fields are velocity variance spectra, in the same convention as
+    the ``Cu``/``Cv`` inputs to :func:`spec_helm_decomp` -- not kinetic
+    energy spectra. See the module docstring for what that means and how
+    to get an actual KE spectrum from these.
     """
 
     psi: xr.DataArray
@@ -55,17 +72,31 @@ class HelmholtzDecomposition:
 
 
 def spec_helm_decomp(k, Cu, Cv, gm: bool = False) -> HelmholtzDecomposition:
-    """Decompose across-/along-track KE spectra into rotational + divergent parts.
+    """Decompose across-/along-track velocity spectra into rotational + divergent parts.
 
     Parameters
     ----------
     k : array_like or xarray.DataArray
         Wavenumber.
     Cu, Cv : array_like or xarray.DataArray
-        Spectra of the across-track and along-track velocity components.
+        Velocity variance spectra of the across-track and along-track
+        components -- i.e. the direct spectra of ``u`` and ``v``
+        themselves, *not* already multiplied by 1/2 to make them kinetic
+        energy spectra. See the module docstring for why this matters:
+        conflating the two conventions is an easy way to end up with
+        results that are off by a factor of 2.
     gm : bool, default False
         If True, further split into wave and vortex components using a
-        reference Garrett-Munk spectrum shipped with the package.
+        reference Garrett-Munk spectrum shipped with the package. These
+        additional fields (``u_wave``, ``v_wave``, ``ke_wave``,
+        ``buoyancy_wave``, etc.) are a direct port of the original
+        implementation's formulas and follow the same Cu/Cv variance
+        convention as everything else here; if you need publication-grade
+        certainty about their exact normalization, cross-check against
+        Buhler, Callies & Ferrari (2014) directly -- that part of the
+        algorithm hasn't been independently re-derived from scratch here,
+        only ported and regression-tested against the original code's
+        numerical output.
     """
     k_arr = k.values if isinstance(k, xr.DataArray) else np.asarray(k, dtype=float)
     Cu_arr = Cu.values if isinstance(Cu, xr.DataArray) else np.asarray(Cu, dtype=float)
@@ -93,11 +124,11 @@ def spec_helm_decomp(k, Cu, Cv, gm: bool = False) -> HelmholtzDecomposition:
     coords = {dim: k_arr}
     psi_da = xr.DataArray(
         Cpsi, dims=[dim], coords=coords, name="psi",
-        attrs={"long_name": "rotational KE spectrum"},
+        attrs={"long_name": "rotational velocity variance spectrum"},
     )
     phi_da = xr.DataArray(
         Cphi, dims=[dim], coords=coords, name="phi",
-        attrs={"long_name": "divergent KE spectrum"},
+        attrs={"long_name": "divergent velocity variance spectrum"},
     )
 
     if not gm:
@@ -130,10 +161,10 @@ def spec_helm_decomp(k, Cu, Cv, gm: bool = False) -> HelmholtzDecomposition:
     return HelmholtzDecomposition(
         psi=psi_da,
         phi=phi_da,
-        u_wave=_wrap(Cu_w, "u_wave", "wave component of across-track KE"),
-        v_wave=_wrap(Cv_w, "v_wave", "wave component of along-track KE"),
-        u_vortex=_wrap(Cu_v, "u_vortex", "vortex component of across-track KE"),
-        v_vortex=_wrap(Cv_v, "v_vortex", "vortex component of along-track KE"),
-        ke_wave=_wrap(E_w, "ke_wave", "total wave KE"),
+        u_wave=_wrap(Cu_w, "u_wave", "wave component of across-track velocity variance"),
+        v_wave=_wrap(Cv_w, "v_wave", "wave component of along-track velocity variance"),
+        u_vortex=_wrap(Cu_v, "u_vortex", "vortex component of across-track velocity variance"),
+        v_vortex=_wrap(Cv_v, "v_vortex", "vortex component of along-track velocity variance"),
+        ke_wave=_wrap(E_w, "ke_wave", "wave-associated energy-like quantity E_w (Buhler et al. 2014); variance convention, see module docstring"),
         buoyancy_wave=_wrap(Cb_w, "buoyancy_wave", "wave buoyancy variance"),
     )
