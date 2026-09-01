@@ -15,16 +15,27 @@ KE spectrum from any output here, you multiply by 0.5 yourself -- e.g.
 ``0.5 * (result.psi + result.phi)`` for the total. This is verified
 directly by the algorithm's construction: ``result.psi + result.phi``
 reconstructs ``Cu + Cv`` exactly (to machine precision), not half of it.
+
+A note on the wave/vortex (``gm``) split: the original implementation
+used a single Garrett-Munk reference spectrum hardcoded for one specific
+location (Drake Passage) as a silent default -- meaning it was, without
+any warning, using Drake Passage's internal-wave field as the reference
+for whatever data you gave it, anywhere in the world. That's fixed here:
+``gm`` now takes a :class:`pyspec.gm.GMParams` with your own location's
+Coriolis parameter and stratification, and the reference spectrum is
+computed on the fly via :func:`pyspec.gm.compute_gm_reference`. See that
+module for details.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from importlib import resources
 
 import numpy as np
 import xarray as xr
 from scipy.integrate import simpson
+
+from pyspec.gm import GMParams, compute_gm_reference
 
 
 def _central_diff(x: np.ndarray, y: np.ndarray) -> np.ndarray:
@@ -34,26 +45,13 @@ def _central_diff(x: np.ndarray, y: np.ndarray) -> np.ndarray:
     return (1 - f) * (y2 - y1) / (x2 - x1) + f * (y1 - y0) / (x1 - x0)
 
 
-def _load_gm_spectrum() -> tuple[np.ndarray, np.ndarray]:
-    """Load the packaged Garrett-Munk reference spectrum.
-
-    The original implementation loaded this from a hardcoded absolute
-    path (/Users/crocha/Projects/dp_spectra/GM/gm_omega_star.npz) that
-    only ever existed on the original author's own machine. The data file
-    now ships inside the package itself.
-    """
-    ref = resources.files("pyspec.data").joinpath("gm_omega_star.npz")
-    with resources.as_file(ref) as path, np.load(path) as gm:
-        return gm["rgm"], gm["k"] * 1.0e3
-
-
 @dataclass
 class HelmholtzDecomposition:
     """Result of a Helmholtz decomposition of horizontal velocity spectra.
 
     ``psi`` (rotational) and ``phi`` (divergent) are always populated.
     The wave/vortex fields are only populated when the decomposition was
-    run with ``gm=True``; otherwise they are ``None``.
+    run with a ``gm`` reference; otherwise they are ``None``.
 
     All fields are velocity variance spectra, in the same convention as
     the ``Cu``/``Cv`` inputs to :func:`spec_helm_decomp` -- not kinetic
@@ -71,13 +69,15 @@ class HelmholtzDecomposition:
     buoyancy_wave: xr.DataArray | None = None
 
 
-def spec_helm_decomp(k, Cu, Cv, gm: bool = False) -> HelmholtzDecomposition:
+def spec_helm_decomp(k, Cu, Cv, gm: GMParams | None = None) -> HelmholtzDecomposition:
     """Decompose across-/along-track velocity spectra into rotational + divergent parts.
 
     Parameters
     ----------
     k : array_like or xarray.DataArray
-        Wavenumber.
+        Wavenumber, in cycles/km (this matters if ``gm`` is given: the GM
+        reference spectrum is computed directly over your ``k``'s min/max
+        range, in the same units).
     Cu, Cv : array_like or xarray.DataArray
         Velocity variance spectra of the across-track and along-track
         components -- i.e. the direct spectra of ``u`` and ``v``
@@ -85,18 +85,21 @@ def spec_helm_decomp(k, Cu, Cv, gm: bool = False) -> HelmholtzDecomposition:
         energy spectra. See the module docstring for why this matters:
         conflating the two conventions is an easy way to end up with
         results that are off by a factor of 2.
-    gm : bool, default False
-        If True, further split into wave and vortex components using a
-        reference Garrett-Munk spectrum shipped with the package. These
-        additional fields (``u_wave``, ``v_wave``, ``ke_wave``,
-        ``buoyancy_wave``, etc.) are a direct port of the original
-        implementation's formulas and follow the same Cu/Cv variance
-        convention as everything else here; if you need publication-grade
-        certainty about their exact normalization, cross-check against
-        Buhler, Callies & Ferrari (2014) directly -- that part of the
-        algorithm hasn't been independently re-derived from scratch here,
-        only ported and regression-tested against the original code's
-        numerical output.
+    gm : pyspec.gm.GMParams, optional
+        If given, further split into wave and vortex components using a
+        Garrett-Munk reference spectrum computed for the location
+        described by ``gm`` (its Coriolis parameter and stratification --
+        see :class:`pyspec.gm.GMParams`). If omitted (the default), only
+        ``psi``/``phi`` are computed and the wave/vortex fields are
+        ``None``. These additional fields (``u_wave``, ``v_wave``,
+        ``ke_wave``, ``buoyancy_wave``, etc.) are a direct port of the
+        original implementation's formulas and follow the same Cu/Cv
+        variance convention as everything else here; if you need
+        publication-grade certainty about their exact normalization,
+        cross-check against Buhler, Callies & Ferrari (2014) directly --
+        that part of the algorithm hasn't been independently re-derived
+        from scratch here, only ported and regression-tested against the
+        original code's numerical output.
     """
     k_arr = k.values if isinstance(k, xr.DataArray) else np.asarray(k, dtype=float)
     Cu_arr = Cu.values if isinstance(Cu, xr.DataArray) else np.asarray(Cu, dtype=float)
@@ -131,10 +134,23 @@ def spec_helm_decomp(k, Cu, Cv, gm: bool = False) -> HelmholtzDecomposition:
         attrs={"long_name": "divergent velocity variance spectrum"},
     )
 
-    if not gm:
+    if gm is None:
         return HelmholtzDecomposition(psi=psi_da, phi=phi_da)
 
-    f2omg2, ks = _load_gm_spectrum()
+    # Pad the requested range beyond k_arr's own bounds, and drop any
+    # non-finite points before interpolating: compute_gm_reference's
+    # rgm is NaN at the last point or two of its own grid (the Fpsi/Fphi
+    # ratio has no integration width left there). If kmax were matched
+    # exactly to k_arr.max(), that NaN would land exactly on your last
+    # data point and propagate into every wave/vortex output -- this
+    # padding keeps it safely outside the range you actually care about.
+    ks, f2omg2 = compute_gm_reference(
+        gm,
+        kmin=min(1e-3, float(k_arr.min()) * 0.5),
+        kmax=max(100.0, float(k_arr.max()) * 2.0),
+    )
+    valid = np.isfinite(f2omg2)
+    ks, f2omg2 = ks[valid], f2omg2[valid]
     f2omg2i = np.interp(k_arr, ks, f2omg2)
 
     Cv_w = f2omg2i * Fphi - Fpsi + Cv_arr

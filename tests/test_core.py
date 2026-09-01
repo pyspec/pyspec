@@ -49,6 +49,40 @@ def test_periodogram_1d_frequency_grid():
     np.testing.assert_allclose(freq, df * np.arange(6))
 
 
+@pytest.mark.parametrize("sigma,dt", [(1.0, 1.0), (2.5, 0.1), (0.3, 5.0)])
+def test_periodogram_1d_matches_analytic_white_noise_level(sigma, dt, n=500_000):
+    """Ground-truth check independent of any reference implementation: for
+    white noise with variance sigma^2 sampled at interval dt, the
+    one-sided PSD level is exactly 2*sigma^2*dt (derivable directly from
+    Parseval's theorem plus the Nyquist bandwidth: integrating a flat
+    level of 2*sigma^2*dt over [0, 1/(2*dt)] gives exactly sigma^2).
+    This doesn't just check self-consistency (as the Parseval tests
+    above do) -- it checks the normalization is *correct*, not just
+    internally consistent."""
+    rng = np.random.default_rng(0)
+    x = rng.normal(0, sigma, n)
+    freq, psd, df = _core.periodogram_1d(x, dt=dt, detrend_kind=False, window=None)
+    theoretical = 2 * sigma**2 * dt
+    empirical = psd[1:-1].mean()  # exclude DC/Nyquist, which are theoretically half this
+    assert empirical == pytest.approx(theoretical, rel=0.01)
+
+
+def test_periodogram_1d_matches_analytic_sinusoid():
+    """A pure sinusoid has an exactly known variance (A^2/2, no
+    statistics involved), giving a second independent ground-truth check."""
+    A, f0, dt, n = 3.0, 0.037, 1.0, 4096
+    t = np.arange(n) * dt
+    x = A * np.cos(2 * np.pi * f0 * t)
+    freq, psd, df = _core.periodogram_1d(x, dt=dt, detrend_kind=False, window=None)
+
+    var_analytic = A**2 / 2
+    var_from_psd = df * psd[1:].sum()
+    assert var_from_psd == pytest.approx(var_analytic, rel=1e-3)
+
+    peak_freq = freq[np.argmax(psd)]
+    assert peak_freq == pytest.approx(f0, abs=freq[1] - freq[0])
+
+
 def test_periodogram_1d_white_noise_is_flat_on_average():
     rng = np.random.default_rng(2)
     n = 20000

@@ -71,13 +71,29 @@ of change -- each one is backed by a test in `tests/test_core.py`.
    mean). Pass `detrend=False` to match the original's behavior exactly
    (aside from item 6 below).
 
-5. **`helmholtz.py`'s Garrett-Munk data no longer requires a hardcoded
-   path.** The original loaded
-   `/Users/crocha/Projects/dp_spectra/GM/gm_omega_star.npz` -- a path
-   that only ever existed on the original author's machine, so
-   `gm=True` was unusable for anyone else. The reference data now ships
-   inside the package (`pyspec/data/gm_omega_star.npz`) and loads via
-   `importlib.resources`.
+5. **`helmholtz.py`'s Garrett-Munk reference is now computed from
+   parameters you supply, not a hardcoded file.** This went through two
+   stages. Initially, the original's hardcoded absolute path
+   (`/Users/crocha/Projects/dp_spectra/GM/gm_omega_star.npz`, which only
+   ever existed on the original author's machine) was fixed by shipping
+   that same file inside the package. But that only fixed the *access*
+   problem -- it left a deeper one: that file was a GM76 reference
+   spectrum computed once for one specific location (Drake Passage, at
+   58°S with locally-appropriate stratification), silently reused as the
+   default for `gm=True` regardless of what location your own data came
+   from. `spec_helm_decomp`'s `gm` parameter is now a
+   `pyspec.gm.GMParams` (Coriolis parameter, buoyancy frequency, and
+   optionally the thermocline depth scale and mode-bandwidth parameter),
+   and the reference spectrum is computed on the fly by
+   `pyspec.gm.compute_gm_reference` for your own location. There's no
+   default location anymore -- you always supply your own `f`/`N0`.
+   The underlying algorithm (GM76 mode sum -> internal-wave dispersion
+   relation -> isotropic-to-1D projection) is unchanged from the
+   original and is regression-tested (`tests/test_gm.py`) to reproduce
+   the original Drake Passage file's values to within ~0.07% (a
+   `scipy.integrate.simps`-vs-`simpson` version difference, not an
+   algorithmic one) when given that file's original parameters
+   (`GMParams(f=coriolis_frequency(-58), N0=3e-3, b=1000.)`).
 
 6. **Neither `Spectrum1D` nor `Spectrum2D` mutate their input** (see
    above). If you were relying on the original's in-place windowing as a

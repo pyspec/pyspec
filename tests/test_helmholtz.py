@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 import xarray as xr
 
-from pyspec import HelmholtzDecomposition, spec_helm_decomp
+from pyspec import GMParams, HelmholtzDecomposition, coriolis_frequency, spec_helm_decomp
 
 
 def test_returns_dataclass_with_psi_and_phi():
@@ -56,10 +56,11 @@ def test_accepts_dataarray_input_and_preserves_dim_name():
     assert result.psi.dims == ("wavenumber",)
 
 
-def test_gm_true_populates_wave_vortex_fields():
+def test_gm_populates_wave_vortex_fields():
     k = np.logspace(-2, 1, 40)
     Cu = Cv = k**-2.0
-    result = spec_helm_decomp(k, Cu, Cv, gm=True)
+    params = GMParams(f=coriolis_frequency(-58.0), N0=3.0e-3, b=1000.0)
+    result = spec_helm_decomp(k, Cu, Cv, gm=params)
 
     for field in (
         result.u_wave,
@@ -73,10 +74,41 @@ def test_gm_true_populates_wave_vortex_fields():
         assert np.all(np.isfinite(field.values))
 
 
-def test_gm_loads_packaged_data_not_hardcoded_path():
-    """Regression test for the original hardcoded-absolute-path bug."""
-    from pyspec.helmholtz import _load_gm_spectrum
+def test_gm_no_nan_when_k_range_matches_gm_reference_bounds_exactly():
+    """Regression test: compute_gm_reference's own output has NaN at the
+    last point or two of whatever range it's asked to compute (the
+    Fpsi/Fphi ratio has no integration width left there -- see its
+    docstring). If spec_helm_decomp asked for that range to match the
+    caller's k array exactly, that NaN would land squarely on the
+    caller's own last data point and propagate into every wave/vortex
+    output. This isn't a synthetic edge case -- it's what happens for
+    any ordinary k array, which is exactly how it was first caught."""
+    for n in (10, 40, 100):
+        k = np.logspace(-2, 1, n)
+        Cu = Cv = k**-2.0
+        params = GMParams(f=coriolis_frequency(-30.0), N0=4.0e-3, b=1300.0)
+        result = spec_helm_decomp(k, Cu, Cv, gm=params)
+        for field in (result.u_wave, result.v_wave, result.u_vortex,
+                      result.v_vortex, result.ke_wave, result.buoyancy_wave):
+            assert np.all(np.isfinite(field.values)), f"n={n}: {field.name} has non-finite values"
 
-    f2omg2, ks = _load_gm_spectrum()
-    assert f2omg2.size > 0
-    assert ks.size == f2omg2.size
+
+def test_gm_none_by_default_leaves_wave_fields_none():
+    k = np.logspace(-2, 1, 40)
+    Cu = Cv = k**-2.0
+    result = spec_helm_decomp(k, Cu, Cv)  # gm not given
+    assert result.u_wave is None
+    assert result.v_wave is None
+
+
+def test_gm_different_locations_give_different_wave_vortex_split():
+    """The whole point of replacing the hardcoded Drake Passage default:
+    two different locations must give different results, not silently
+    reuse one location's internal-wave field for everything."""
+    k = np.logspace(-2, 1, 40)
+    Cu = Cv = k**-2.0
+
+    result_dp = spec_helm_decomp(k, Cu, Cv, gm=GMParams(f=coriolis_frequency(-58.0), N0=3.0e-3, b=1000.0))
+    result_other = spec_helm_decomp(k, Cu, Cv, gm=GMParams(f=coriolis_frequency(20.0), N0=6.0e-3, b=1300.0))
+
+    assert not np.allclose(result_dp.u_wave.values, result_other.u_wave.values, rtol=0.05)

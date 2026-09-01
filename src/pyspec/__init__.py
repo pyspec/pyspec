@@ -11,6 +11,12 @@ except PackageNotFoundError:  # pragma: no cover
     __version__ = "0.0.0+unknown"
 
 from pyspec import _core  # noqa: F401  (pure numpy; always importable)
+from pyspec.gm import (  # noqa: F401 (pure numpy; always importable)
+    EARTH_ANGULAR_VELOCITY,
+    GMParams,
+    compute_gm_reference,
+    coriolis_frequency,
+)
 
 try:
     from pyspec.binning import avg_per_decade
@@ -23,8 +29,8 @@ except ImportError as exc:  # pragma: no cover
 
     warnings.warn(
         "pyspec's high-level API requires xarray, which could not be "
-        f"imported ({exc}). Only pyspec._core (plain-numpy functions) is "
-        "available in this environment.",
+        f"imported ({exc}). Only pyspec._core/pyspec.gm (plain-numpy "
+        "functions) are available in this environment.",
         stacklevel=2,
     )
     Spectrum1D = Spectrum2D = IsotropicSpectrum = None  # type: ignore[assignment]
@@ -41,4 +47,8 @@ __all__ = [
     "confidence_interval",
     "spectral_slope",
     "avg_per_decade",
+    "GMParams",
+    "coriolis_frequency",
+    "compute_gm_reference",
+    "EARTH_ANGULAR_VELOCITY",
 ]
