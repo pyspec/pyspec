@@ -2,5 +2,8 @@
 *.pyc
 __pycache__/
 
+src/pyspec/__pycache__/*
+tests/pyspec/__pycache__/*
+
 # Ignore Jupyter Notebook checkpoints
 .ipynb_checkpoints/
