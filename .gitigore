@@ -1,0 +1,6 @@
+# Ignore Python bytecode and cache
+*.pyc
+__pycache__/
+
+# Ignore Jupyter Notebook checkpoints
+.ipynb_checkpoints/
