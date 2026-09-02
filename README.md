@@ -1,34 +1,80 @@
-# pyspec 
-[![DOI](https://zenodo.org/badge/doi/10.5281/zenodo.31596.svg)](http://dx.doi.org/10.5281/zenodo.31596)
-## A Pythonic package for spectral analysis ##
+# pyspec
 
+Spectral estimates from in-situ oceanographic data and models, rebuilt on
+`xarray`.
 
-This is an on-going project in which I'm gathering codes for spectral analysis that I've been developing for my own research in oceanography. In particular, most of these codes were developed for a project on the horizontal wavenumber spectra in Drake Passage ([dp_spectra](https://github.com/crocha700/dp_spectra)). Contributions are very welcome.
+Originally by Cesar B Rocha; developed for a project on horizontal
+wavenumber spectra in Drake Passage.
 
-## Dependencies ##
-pyspec assumes you have basic Python packages for scientific applications (scipy, numpy, etc). I strongly encourage you to install the free [anaconda](https://store.continuum.io/cshop/anaconda/) distribution.
+## Install
 
-## Installation ##
+```
+pip install -e ".[test]"
+```
 
-This is a legit python package. You can install it
+Requires Python >= 3.10, numpy, scipy, and xarray.
 
-	python setup.py install
+## Quickstart
 
-If you want to develop and contribute to the project, set up the development mode
+```python
+import numpy as np
+from pyspec import Spectrum1D, Spectrum2D, spec_helm_decomp
 
-	python setup.py develop
+# 1-D spectrum (numpy or xarray input; always returns xarray output)
+phi = np.random.randn(1000)
+s = Spectrum1D(phi, dt=1.0)
+s.psd    # xarray.DataArray, dims ("freq",)
+s.var    # float, Parseval-theorem-consistent variance
 
-## Usage ##
+# 2-D spectrum + isotropic (azimuthally-averaged) spectrum
+field = np.random.randn(128, 128)
+s2 = Spectrum2D(field, d1=1.0, d2=1.0)
+iso = s2.isotropic()   # IsotropicSpectrum, .psd is 1-D DataArray vs radial k
 
-Here are some simple examples 
+# Helmholtz (rotational/divergent) decomposition
+k = np.logspace(-3, 0, 60)
+result = spec_helm_decomp(k, Cu=k**-2, Cv=k**-2)
+result.psi   # rotational KE spectrum
+result.phi   # divergent KE spectrum
+```
 
-* An IPython [notebook](http://nbviewer.ipython.org/github/crocha700/pyspec/blob/master/examples/example_1d_spec.ipynb) describing a single calculation of one-dimensional wavenumber spectra.
+If you pass an `xarray.DataArray` with a coordinate instead of a plain
+array, `dt`/`d1`/`d2` are inferred automatically from the coordinate
+spacing, and the output reuses your dimension names:
 
-* An IPython [notebook](http://nbviewer.ipython.org/github/crocha700/dp_spectra/blob/master/adcp/buhler_etal_decomposition.ipynb) showcasing the decomposition of one-dimensional kinetic energy spectra into rotational and divergent components.
+```python
+import xarray as xr
+da = xr.DataArray(phi, dims=["time"], coords={"time": np.arange(1000) * 0.5})
+s = Spectrum1D(da)     # dt=0.5 inferred, output dim is "time"
+```
 
-* An IPython [notebook](http://nbviewer.ipython.org/github/crocha700/pyspec/blob/master/examples/example_2d_spectra.ipynb) showing the basic usage of **pyspec** to compute 2D spectrum and its associated isotropic spectrum. This notebook also showcases the estimation of confidence limits.
+## Package layout
 
-## Funding ##
-Part of this package was developed for a project funded by the NASA Ocean Surface Topography Science Team (NNX13AE44G) and the NSF Polar Program (PLR-1341431). The leading developer is currently supported by NSF (OCE 1357047).
+- `pyspec._core` -- pure-numpy computational routines (periodograms,
+  isotropic averaging, confidence intervals, binning, slope fitting). No
+  xarray dependency; fast to import and test.
+- `pyspec.onedim` / `pyspec.twodim` -- `Spectrum1D`, `Spectrum2D`,
+  `IsotropicSpectrum`: the xarray-facing object API.
+- `pyspec.helmholtz` -- `spec_helm_decomp`, returning a
+  `HelmholtzDecomposition` dataclass of `xarray.DataArray`s.
+- `pyspec.errors` / `pyspec.binning` -- confidence intervals, spectral
+  slope fitting, log-decade binning.
 
+## Testing
 
+```
+pytest
+```
+
+`tests/test_core.py` covers the numpy computational core (including a
+regression check of the vectorized isotropic averaging against a direct
+port of the original loop). The rest of the suite exercises the
+xarray-facing API and requires xarray; `tests/conftest.py` skips it
+automatically if xarray isn't installed.
+
+See `MIGRATION.md` for what changed relative to the pre-refactor version,
+and why.
+
+## License
+
+MIT
