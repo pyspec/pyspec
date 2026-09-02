@@ -24,7 +24,7 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/cesar-rocha/pyspec"
+Homepage = "https://github.com/pyspec/pyspec"
 
 [project.optional-dependencies]
 test = ["pytest>=7", "hypothesis>=6"]
