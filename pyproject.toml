@@ -4,11 +4,11 @@ build-backend = "hatchling.build"
 
 [project]
 name = "pyspec"
-version = "0.2.0"
+version = "1.0.0"
 description = "Spectral estimates from in-situ oceanographic data and models"
 readme = "README.md"
 license = { text = "MIT" }
-authors = [{ name = "Cesar B Rocha", email = "crocha@ucsd.edu" }]
+authors = [{ name = "Cesar B Rocha", email = "crocha@usp.br" }]
 requires-python = ">=3.10"
 dependencies = [
     "numpy>=1.24",
@@ -24,7 +24,7 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/crocha700/pyspec"
+Homepage = "https://github.com/cesar-rocha/pyspec"
 
 [project.optional-dependencies]
 test = ["pytest>=7", "hypothesis>=6"]
